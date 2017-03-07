@@ -56,23 +56,24 @@ lm.utils.copy( lm.items.RowOrColumn.prototype, {
 		}
 
 		lm.items.AbstractContentItem.prototype.addChild.call( this, contentItem, index );
-
-		newItemSize = ( 1 / this.contentItems.length ) * 100;
-
+		
+		var resizeable = this.contentItems.filter(function(e){
+			return (contentItem!==e)&&!e.config.fixedSize});
+		var dim = this._dimension
+		var percentage = this.contentItems.reduce(function(a,e){
+			return a-e.config.fixedSize*(e.config[dim]||0)},100)
+		
+		newItemSize = percentage / (resizeable.length + 1);
+		
 		if( _$suspendResize === true ) {
 			this.emitBubblingEvent( 'stateChanged' );
 			return;
 		}
-
-		for( i = 0; i < this.contentItems.length; i++ ) {
-			if( this.contentItems[ i ] === contentItem ) {
-				contentItem.config[ this._dimension ] = newItemSize;
-			} else {
-				itemSize = this.contentItems[ i ].config[ this._dimension ] *= ( 100 - newItemSize ) / 100;
-				this.contentItems[ i ].config[ this._dimension ] = itemSize;
-			}
-		}
-
+		
+		contentItem.config[dim] = newItemSize;
+		resizeable.forEach(function(e){
+			e.config[dim] *= ( percentage - newItemSize ) / percentage});
+		
 		this.callDownwards( 'setSize' );
 		this.emitBubblingEvent( 'stateChanged' );
 	},

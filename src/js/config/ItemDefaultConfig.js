@@ -1,5 +1,6 @@
 lm.config.itemDefaultConfig = {
 	isClosable: true,
 	reorderEnabled: true,
-	title: ''
+	title: '',
+	fixedSize: false
 };
