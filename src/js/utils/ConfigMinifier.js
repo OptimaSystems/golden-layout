@@ -35,8 +35,8 @@ lm.utils.ConfigMinifier = function(){
 		'openPopouts',
 		'parentId',
 		'activeItemIndex',
-		'reorderEnabled'
-
+		'reorderEnabled',
+		'fixedSize'
 
 
 

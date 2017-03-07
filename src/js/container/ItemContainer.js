@@ -95,22 +95,20 @@ lm.utils.copy( lm.container.ItemContainer.prototype, {
 				return false;
 			}
 		}
-
+		var resizeable = rowOrColumn.contentItems.filter(function(e){
+			return (rowOrColumnChild!==e)&&!e.config.fixedSize});
+		if (resizeable.length == 0) return false;
+		
 		direction = rowOrColumn.isColumn ? "height" : "width";
 		newSize = direction === "height" ? height : width;
 
 		totalPixel = this[direction] * ( 1 / ( rowOrColumnChild.config[direction] / 100 ) );
 		percentage = ( newSize / totalPixel ) * 100;
-		delta = ( rowOrColumnChild.config[direction] - percentage ) / (rowOrColumn.contentItems.length - 1);
-
-		for( i = 0; i < rowOrColumn.contentItems.length; i++ ) {
-			if( rowOrColumn.contentItems[ i ] === rowOrColumnChild ) {
-				rowOrColumn.contentItems[ i ].config[direction] = percentage;
-			} else {
-				rowOrColumn.contentItems[ i ].config[direction] += delta;
-			}
-		}
-
+		delta = ( rowOrColumnChild.config[direction] - percentage ) / resizeable.length;
+		
+		rowOrColumnChild.config[direction] = percentage;
+		resizeable.forEach(function(e){e.config[direction]+=delta});
+		
 		rowOrColumn.callDownwards( 'setSize' );
 
 		return true;

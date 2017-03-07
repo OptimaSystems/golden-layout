@@ -134,6 +134,23 @@ lm.utils.copy( lm.items.Stack.prototype, {
 		}
 
 		this.header._$setClosable( isClosable );
+		this._$validateFixedSize()
+	},
+
+	/**
+	 * Validates if the stack has fixedSize or not. If a stack contains
+	 * a fixedSize component then the stack is not affected
+	 * by automatic resizing events.
+	 *
+	 * @returns {void}
+	 */
+	_$validateFixedSize: function() {
+		var len,i;
+
+		for ( i = 0, len = this.contentItems.length; i < len; i++ ) {
+			if (this.config.fixedSize = this.contentItems[i].config.fixedSize) break; 
+		}
+
 	},
 
 	_$destroy: function() {
