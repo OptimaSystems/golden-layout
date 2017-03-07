@@ -1511,7 +1511,8 @@ lm.utils.copy( lm.LayoutManager.prototype, {
 lm.config.itemDefaultConfig = {
 	isClosable: true,
 	reorderEnabled: true,
-	title: ''
+	title: '',
+	fixedSize: false
 };
 lm.config.defaultConfig = {
 	openPopouts:[],
@@ -1555,14 +1556,14 @@ lm.container.ItemContainer = function( config, parent, layoutManager ) {
 	this.parent = parent;
 	this.layoutManager = layoutManager;
 	this.isHidden = false;
-
+	
 	this._config = config;
 	this._element = $([
 		'<div class="lm_item_container">',
 			'<div class="lm_content"></div>',
 		'</div>'
 	].join( '' ));
-
+	
 	this._contentElement = this._element.find( '.lm_content' );
 };
 
@@ -1577,7 +1578,7 @@ lm.utils.copy( lm.container.ItemContainer.prototype, {
 	getElement: function() {
 		return this._contentElement;
 	},
-
+	
 	/**
 	 * Hide the container. Notifies the containers content first
 	 * and then hides the DOM node. If the container is already hidden
@@ -1590,7 +1591,7 @@ lm.utils.copy( lm.container.ItemContainer.prototype, {
 		this.isHidden = true;
 		this._element.hide();
 	},
-
+	
 	/**
 	 * Shows a previously hidden container. Notifies the
 	 * containers content first and then shows the DOM element.
@@ -1618,7 +1619,7 @@ lm.utils.copy( lm.container.ItemContainer.prototype, {
 	 * @todo  Rework!!!
 	 * @param {Number} width  The new width in pixel
 	 * @param {Number} height The new height in pixel
-	 *
+	 * 
 	 * @returns {Boolean} resizeSuccesful
 	 */
 	setSize: function( width, height ) {
@@ -1634,7 +1635,7 @@ lm.utils.copy( lm.container.ItemContainer.prototype, {
 		while( !rowOrColumn.isColumn && !rowOrColumn.isRow ) {
 			rowOrColumnChild = rowOrColumn;
 			rowOrColumn = rowOrColumn.parent;
-
+			
 
 			/**
 			 * No row or column has been found
@@ -1643,27 +1644,25 @@ lm.utils.copy( lm.container.ItemContainer.prototype, {
 				return false;
 			}
 		}
-
+		var resizeable = rowOrColumn.contentItems.filter(function(e){
+			return (rowOrColumnChild!==e)&&!e.config.fixedSize});
+		if (resizeable.length == 0) return false;
+		
 		direction = rowOrColumn.isColumn ? "height" : "width";
 		newSize = direction === "height" ? height : width;
 
 		totalPixel = this[direction] * ( 1 / ( rowOrColumnChild.config[direction] / 100 ) );
 		percentage = ( newSize / totalPixel ) * 100;
-		delta = ( rowOrColumnChild.config[direction] - percentage ) / (rowOrColumn.contentItems.length - 1);
-
-		for( i = 0; i < rowOrColumn.contentItems.length; i++ ) {
-			if( rowOrColumn.contentItems[ i ] === rowOrColumnChild ) {
-				rowOrColumn.contentItems[ i ].config[direction] = percentage;
-			} else {
-				rowOrColumn.contentItems[ i ].config[direction] += delta;
-			}
-		}
-
+		delta = ( rowOrColumnChild.config[direction] - percentage ) / resizeable.length;
+		
+		rowOrColumnChild.config[direction] = percentage;
+		resizeable.forEach(function(e){e.config[direction]+=delta});
+		
 		rowOrColumn.callDownwards( 'setSize' );
 
 		return true;
 	},
-
+	
 	/**
 	 * Closes the container if it is closable. Can be called by
 	 * both the component within at as well as the contentItem containing
@@ -1724,7 +1723,7 @@ lm.utils.copy( lm.container.ItemContainer.prototype, {
 	 *
 	 * @param {[Int]} width  in px
 	 * @param {[Int]} height in px
-	 *
+	 * 
 	 * @returns {void}
 	 */
 	_$setSize: function( width, height ) {
@@ -3718,22 +3717,23 @@ lm.utils.copy( lm.items.RowOrColumn.prototype, {
 		}
 		
 		lm.items.AbstractContentItem.prototype.addChild.call( this, contentItem, index );
-	
-		newItemSize = ( 1 / this.contentItems.length ) * 100;
+		
+		var resizeable = this.contentItems.filter(function(e){
+			return (contentItem!==e)&&!e.config.fixedSize});
+		var dim = this._dimension
+		var percentage = this.contentItems.reduce(function(a,e){
+			return a-e.config.fixedSize*(e.config[dim]||0)},100)
+		
+		newItemSize = percentage / (resizeable.length + 1);
 		
 		if( _$suspendResize === true ) {
 			this.emitBubblingEvent( 'stateChanged' );
 			return;
 		}
 		
-		for( i = 0; i < this.contentItems.length; i++ ) {
-			if( this.contentItems[ i ] === contentItem ) {
-				contentItem.config[ this._dimension ] = newItemSize;
-			} else {
-				itemSize = this.contentItems[ i ].config[ this._dimension ] *= ( 100 - newItemSize ) / 100;
-				this.contentItems[ i ].config[ this._dimension ] = itemSize;
-			}
-		}
+		contentItem.config[dim] = newItemSize;
+		resizeable.forEach(function(e){
+			e.config[dim] *= ( percentage - newItemSize ) / percentage});
 		
 		this.callDownwards( 'setSize' );
 		this.emitBubblingEvent( 'stateChanged' );
@@ -4227,6 +4227,23 @@ lm.utils.copy( lm.items.Stack.prototype, {
 		}
 
 		this.header._$setClosable( isClosable );
+		this._$validateFixedSize()
+	},
+
+	/**
+	 * Validates if the stack has fixedSize or not. If a stack contains
+	 * a fixedSize component then the stack is not affected
+	 * by automatic resizing events.
+	 *
+	 * @returns {void}
+	 */
+	_$validateFixedSize: function() {
+		var len,i;
+
+		for ( i = 0, len = this.contentItems.length; i < len; i++ ) {
+			if (this.config.fixedSize = this.contentItems[i].config.fixedSize) break; 
+		}
+
 	},
 
 	_$destroy: function() {
@@ -4602,8 +4619,8 @@ lm.utils.ConfigMinifier = function(){
 		'openPopouts',
 		'parentId',
 		'activeItemIndex',
-		'reorderEnabled'
-
+		'reorderEnabled',
+		'fixedSize'
 
 
 
