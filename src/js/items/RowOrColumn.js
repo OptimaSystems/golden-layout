@@ -3,7 +3,7 @@ lm.items.RowOrColumn = function( isColumn, layoutManager, config, parent ) {
 
 	this.isRow = !isColumn;
 	this.isColumn = isColumn;
-	
+
 	this.element = $( '<div class="lm_item lm_' + ( isColumn ? 'column' : 'row' ) + '"></div>' );
 	this.childElementContainer = this.element;
 	this._splitterSize = layoutManager.config.dimensions.borderWidth;
@@ -18,7 +18,7 @@ lm.items.RowOrColumn = function( isColumn, layoutManager, config, parent ) {
 lm.utils.extend( lm.items.RowOrColumn, lm.items.AbstractContentItem );
 
 lm.utils.copy( lm.items.RowOrColumn.prototype, {
-	
+
 	/**
 	 * Add a new contentItem to the Row or Column
 	 *
@@ -32,18 +32,18 @@ lm.utils.copy( lm.items.RowOrColumn.prototype, {
 	 * @returns {void}
 	 */
 	addChild: function( contentItem, index, _$suspendResize ) {
-	
+
 		var newItemSize, itemSize, i, splitterElement;
-	
+
 		contentItem = this.layoutManager._$normalizeContentItem( contentItem, this );
 
 		if( index === undefined ) {
 			index = this.contentItems.length;
 		}
-	
+
 		if( this.contentItems.length > 0 ) {
 			splitterElement = this._createSplitter( Math.max( 0, index - 1 ) ).element;
-	
+
 			if( index > 0 ) {
 				this.contentItems[ index - 1 ].element.after( splitterElement );
 				splitterElement.after( contentItem.element );
@@ -54,26 +54,26 @@ lm.utils.copy( lm.items.RowOrColumn.prototype, {
 		} else {
 			this.childElementContainer.append( contentItem.element );
 		}
-		
+
 		lm.items.AbstractContentItem.prototype.addChild.call( this, contentItem, index );
-		
+
 		var resizeable = this.contentItems.filter(function(e){
 			return (contentItem!==e)&&!e.config.fixedSize});
 		var dim = this._dimension
 		var percentage = this.contentItems.reduce(function(a,e){
 			return a-e.config.fixedSize*(e.config[dim]||0)},100)
-		
+
 		newItemSize = percentage / (resizeable.length + 1);
-		
+
 		if( _$suspendResize === true ) {
 			this.emitBubblingEvent( 'stateChanged' );
 			return;
 		}
-		
+
 		contentItem.config[dim] = newItemSize;
 		resizeable.forEach(function(e){
 			e.config[dim] *= ( percentage - newItemSize ) / percentage});
-		
+
 		this.callDownwards( 'setSize' );
 		this.emitBubblingEvent( 'stateChanged' );
 	},
@@ -96,7 +96,7 @@ lm.utils.copy( lm.items.RowOrColumn.prototype, {
 		if( index === -1 ) {
 			throw new Error( 'Can\'t remove child. ContentItem is not child of this Row or Column' );
 		}
-		
+
 		/**
 		 * Remove the splitter before the item or after if the item happens
 		 * to be the first in the row/column
@@ -105,16 +105,17 @@ lm.utils.copy( lm.items.RowOrColumn.prototype, {
 			this._splitter[ splitterIndex ]._$destroy();
 			this._splitter.splice( splitterIndex, 1 );
 		}
-		
+
+		var resizeable = this.contentItems.filter(function(e){
+			return (contentItem!==e)&&!e.config.fixedSize});
+		var dim = this._dimension,diff=removedItemSize/resizeable.length;
+
 		/**
 		 * Allocate the space that the removed item occupied to the remaining items
 		 */
-		for( i = 0; i < this.contentItems.length; i++ ) {
-			if( this.contentItems[ i ] !== contentItem ) {
-				this.contentItems[ i ].config[ this._dimension ] += removedItemSize / ( this.contentItems.length - 1 );
-			}
-		}
-	
+		resizeable.forEach(function(e){
+ 			e.config[dim] += diff});
+
 		lm.items.AbstractContentItem.prototype.removeChild.call( this, contentItem, keepChild );
 
 		if( this.contentItems.length === 1 && this.config.isClosable === true ) {
@@ -126,7 +127,7 @@ lm.utils.copy( lm.items.RowOrColumn.prototype, {
 			this.emitBubblingEvent( 'stateChanged' );
 		}
 	},
-	
+
 	/**
 	 * Replaces a child of this Row or Column with another contentItem
 	 *
@@ -142,7 +143,7 @@ lm.utils.copy( lm.items.RowOrColumn.prototype, {
 		this.callDownwards( 'setSize' );
 		this.emitBubblingEvent( 'stateChanged' );
 	},
-	
+
 	/**
 	 * Called whenever the dimensions of this item or one of its parents change
 	 *
@@ -156,7 +157,7 @@ lm.utils.copy( lm.items.RowOrColumn.prototype, {
 		this.emitBubblingEvent( 'stateChanged' );
 		this.emit( 'resize' );
 	},
-	
+
 	/**
 	 * Invoked recursively by the layout manager. AbstractContentItem.init appends
 	 * the contentItem's DOM elements to the container, RowOrColumn init adds splitters
@@ -170,20 +171,20 @@ lm.utils.copy( lm.items.RowOrColumn.prototype, {
 		if( this.isInitialised === true ) return;
 
 		var i;
-	
+
 		lm.items.AbstractContentItem.prototype._$init.call( this );
-		
+
 		for( i = 0; i < this.contentItems.length - 1; i++ ) {
 			this.contentItems[ i ].element.after( this._createSplitter( i ).element );
 		}
 	},
-	
+
 	/**
 	 * Turns the relative sizes calculated by _calculateRelativeSizes into
 	 * absolute pixel values and applies them to the children's DOM elements
 	 *
 	 * Assigns additional pixels to counteract Math.floor
-	 * 
+	 *
 	 * @private
 	 * @returns {void}
 	 */
@@ -196,13 +197,13 @@ lm.utils.copy( lm.items.RowOrColumn.prototype, {
 			additionalPixel,
 			itemSize,
 			itemSizes = [];
-	
+
 		if( this._isColumn ) {
 			totalHeight -= totalSplitterSize;
 		} else {
 			totalWidth -= totalSplitterSize;
 		}
-	
+
 		for( i = 0; i < this.contentItems.length; i++ ) {
 			if( this._isColumn ) {
 				itemSize = Math.floor( totalHeight * ( this.contentItems[ i ].config.height / 100 ) );
@@ -230,19 +231,19 @@ lm.utils.copy( lm.items.RowOrColumn.prototype, {
 			}
 		}
 	},
-	
+
 	/**
 	 * Calculates the relative sizes of all children of this Item. The logic
 	 * is as follows:
-	 * 
+	 *
 	 * - Add up the total size of all items that have a configured size
 	 *
 	 * - If the total == 100 (check for floating point errors)
 	 *		Excellent, job done
-	 * 
-	 * - If the total is > 100, 
+	 *
+	 * - If the total is > 100,
 	 *		set the size of items without set dimensions to 1/3 and add this to the total
-	 *		set the size off all items so that the total is hundred relative to their original size 
+	 *		set the size off all items so that the total is hundred relative to their original size
 	 *
 	 * - If the total is < 100
 	 *		If there are items without set dimensions, distribute the remainder to 100 evenly between them
@@ -253,12 +254,12 @@ lm.utils.copy( lm.items.RowOrColumn.prototype, {
 	 * @returns {void}
 	 */
 	_calculateRelativeSizes: function() {
-		
+
 		var i,
 			total = 0,
 			itemsWithoutSetDimension = [],
 			dimension = this._isColumn ? 'height' : 'width';
-	
+
 		for( i = 0; i < this.contentItems.length; i++ ) {
 			if( this.contentItems[ i ].config[ dimension ] !== undefined ) {
 				total += this.contentItems[ i ].config[ dimension ];
@@ -266,14 +267,14 @@ lm.utils.copy( lm.items.RowOrColumn.prototype, {
 				itemsWithoutSetDimension.push( this.contentItems[ i ] );
 			}
 		}
-	
+
 		/**
 		 * Everything adds up to hundred, all good :-)
 		 */
 		if( Math.round( total ) === 100 ) {
 			return;
 		}
-	
+
 		/**
 		 * Allocate the remaining size to the items without a set dimension
 		 */
@@ -283,7 +284,7 @@ lm.utils.copy( lm.items.RowOrColumn.prototype, {
 			}
 			return;
 		}
-	
+
 		/**
 		 * If the total is > 100, but there are also items without a set dimension left, assing 50
 		 * as their dimension and add it to the total
@@ -296,7 +297,7 @@ lm.utils.copy( lm.items.RowOrColumn.prototype, {
 				total += 50;
 			}
 		}
-	
+
 		/**
 		 * Set every items size relative to 100 relative to its size to total
 		 */
@@ -304,7 +305,7 @@ lm.utils.copy( lm.items.RowOrColumn.prototype, {
 			this.contentItems[ i ].config[ dimension ] = ( this.contentItems[ i ].config[ dimension ] / total ) * 100;
 		}
 	},
-	
+
 	/**
 	 * Instantiates a new lm.controls.Splitter, binds events to it and adds
 	 * it to the array of splitters at the position specified as the index argument
@@ -324,7 +325,7 @@ lm.utils.copy( lm.items.RowOrColumn.prototype, {
 		this._splitter.splice( index, 0, splitter );
 		return splitter;
 	},
-	
+
 	/**
 	 * Locates the instance of lm.controls.Splitter in the array of
 	 * registered splitters and returns a map containing the contentItem
@@ -337,7 +338,7 @@ lm.utils.copy( lm.items.RowOrColumn.prototype, {
 	 */
 	_getItemsForSplitter: function( splitter ) {
 		var index = lm.utils.indexOf( splitter, this._splitter );
-		
+
 		return {
 			before: this.contentItems[ index ],
 			after: this.contentItems[ index + 1 ]
@@ -359,7 +360,7 @@ lm.utils.copy( lm.items.RowOrColumn.prototype, {
 
 		return { horizontal: minWidth, vertical: minHeight };
 	},
-	
+
 	/**
 	 * Invoked when a splitter's dragListener fires dragStart. Calculates the splitters
 	 * movement area once (so that it doesn't need calculating on every mousemove event)
@@ -382,7 +383,7 @@ lm.utils.copy( lm.items.RowOrColumn.prototype, {
 		this._splitterMinPosition = -1 * ( items.before.element[ this._dimension ]() - (beforeMinSize || minSize) );
 		this._splitterMaxPosition = items.after.element[ this._dimension ]() - (afterMinSize || minSize);
 	},
-	
+
 	/**
 	 * Invoked when a splitter's DragListener fires drag. Updates the splitters DOM position,
 	 * but not the sizes of the elements the splitter controls in order to minimize resize events
@@ -395,13 +396,13 @@ lm.utils.copy( lm.items.RowOrColumn.prototype, {
 	 */
 	_onSplitterDrag: function( splitter, offsetX, offsetY ) {
 		var offset = this._isColumn ? offsetY : offsetX;
-	
+
 		if( offset > this._splitterMinPosition && offset < this._splitterMaxPosition ) {
 			this._splitterPosition = offset;
 			splitter.element.css( this._isColumn ? 'top' : 'left', offset );
 		}
 	},
-	
+
 	/**
 	 * Invoked when a splitter's DragListener fires dragStop. Resets the splitters DOM position,
 	 * and applies the new sizes to the elements before and after the splitter and their children
@@ -418,15 +419,15 @@ lm.utils.copy( lm.items.RowOrColumn.prototype, {
 			sizeAfter = items.after.element[ this._dimension ](),
 			splitterPositionInRange = ( this._splitterPosition + sizeBefore ) / ( sizeBefore + sizeAfter ),
 			totalRelativeSize = items.before.config[ this._dimension ] + items.after.config[ this._dimension ];
-	
+
 		items.before.config[ this._dimension ] = splitterPositionInRange * totalRelativeSize;
 		items.after.config[ this._dimension ] = ( 1 - splitterPositionInRange ) * totalRelativeSize;
-	
+
 		splitter.element.css({
 			'top': 0,
 			'left': 0
 		});
-		
+
 		lm.utils.animFrame( lm.utils.fnBind( this.callDownwards, this, [ 'setSize' ] ) );
 	}
 });
