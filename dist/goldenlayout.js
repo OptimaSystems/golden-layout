@@ -3806,21 +3806,22 @@ lm.utils.copy( lm.items.RowOrColumn.prototype, {
 
 		lm.items.AbstractContentItem.prototype.addChild.call( this, contentItem, index );
 
-		newItemSize = ( 1 / this.contentItems.length ) * 100;
+		var resizeable = this.contentItems.filter(function(e){
+			return (contentItem!==e)&&!e.config.fixedSize});
+		var dim = this._dimension
+		var percentage = this.contentItems.reduce(function(a,e){
+			return a-e.config.fixedSize*(e.config[dim]||0)},100)
+
+		newItemSize = percentage / (resizeable.length + 1);
 
 		if( _$suspendResize === true ) {
 			this.emitBubblingEvent( 'stateChanged' );
 			return;
 		}
 
-		for( i = 0; i < this.contentItems.length; i++ ) {
-			if( this.contentItems[ i ] === contentItem ) {
-				contentItem.config[ this._dimension ] = newItemSize;
-			} else {
-				itemSize = this.contentItems[ i ].config[ this._dimension ] *= ( 100 - newItemSize ) / 100;
-				this.contentItems[ i ].config[ this._dimension ] = itemSize;
-			}
-		}
+		contentItem.config[dim] = newItemSize;
+		resizeable.forEach(function(e){
+			e.config[dim] *= ( percentage - newItemSize ) / percentage});
 
 		this.callDownwards( 'setSize' );
 		this.emitBubblingEvent( 'stateChanged' );
@@ -3854,14 +3855,15 @@ lm.utils.copy( lm.items.RowOrColumn.prototype, {
 			this._splitter.splice( splitterIndex, 1 );
 		}
 
+		var resizeable = this.contentItems.filter(function(e){
+			return (contentItem!==e)&&!e.config.fixedSize});
+		var dim = this._dimension,diff=removedItemSize/resizeable.length;
+
 		/**
 		 * Allocate the space that the removed item occupied to the remaining items
 		 */
-		for( i = 0; i < this.contentItems.length; i++ ) {
-			if( this.contentItems[ i ] !== contentItem ) {
-				this.contentItems[ i ].config[ this._dimension ] += removedItemSize / ( this.contentItems.length - 1 );
-			}
-		}
+		resizeable.forEach(function(e){
+ 			e.config[dim] += diff});
 
 		lm.items.AbstractContentItem.prototype.removeChild.call( this, contentItem, keepChild );
 
@@ -4002,11 +4004,11 @@ lm.utils.copy( lm.items.RowOrColumn.prototype, {
 	 * - Add up the total size of all items that have a configured size
 	 *
 	 * - If the total == 100 (check for floating point errors)
-	 *        Excellent, job done
+	 *		Excellent, job done
 	 *
 	 * - If the total is > 100,
-	 *        set the size of items without set dimensions to 1/3 and add this to the total
-	 *        set the size off all items so that the total is hundred relative to their original size
+	 *		set the size of items without set dimensions to 1/3 and add this to the total
+	 *		set the size off all items so that the total is hundred relative to their original size
 	 *
 	 * - If the total is < 100
 	 *        If there are items without set dimensions, distribute the remainder to 100 evenly between them
