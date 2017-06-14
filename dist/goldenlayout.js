@@ -1520,7 +1520,8 @@ lm.utils.copy( lm.LayoutManager.prototype, {
 lm.config.itemDefaultConfig = {
 	isClosable: true,
 	reorderEnabled: true,
-	title: ''
+	title: '',
+	fixedSize: false
 };
 lm.config.defaultConfig = {
 	openPopouts: [],
@@ -1652,22 +1653,20 @@ lm.utils.copy( lm.container.ItemContainer.prototype, {
 				return false;
 			}
 		}
-
+		var resizeable = rowOrColumn.contentItems.filter(function(e){
+			return (rowOrColumnChild!==e)&&!e.config.fixedSize});
+		if (resizeable.length == 0) return false;
+		
 		direction = rowOrColumn.isColumn ? "height" : "width";
 		newSize = direction === "height" ? height : width;
 
 		totalPixel = this[ direction ] * ( 1 / ( rowOrColumnChild.config[ direction ] / 100 ) );
 		percentage = ( newSize / totalPixel ) * 100;
-		delta = ( rowOrColumnChild.config[ direction ] - percentage ) / (rowOrColumn.contentItems.length - 1);
-
-		for( i = 0; i < rowOrColumn.contentItems.length; i++ ) {
-			if( rowOrColumn.contentItems[ i ] === rowOrColumnChild ) {
-				rowOrColumn.contentItems[ i ].config[ direction ] = percentage;
-			} else {
-				rowOrColumn.contentItems[ i ].config[ direction ] += delta;
-			}
-		}
-
+		delta = ( rowOrColumnChild.config[direction] - percentage ) / resizeable.length;
+		
+		rowOrColumnChild.config[direction] = percentage;
+		resizeable.forEach(function(e){e.config[direction]+=delta});
+		
 		rowOrColumn.callDownwards( 'setSize' );
 
 		return true;
@@ -4280,6 +4279,7 @@ lm.utils.copy( lm.items.RowOrColumn.prototype, {
 		lm.utils.animFrame( lm.utils.fnBind( this.callDownwards, this, [ 'setSize' ] ) );
 	}
 } );
+
 lm.items.Stack = function( layoutManager, config, parent ) {
 	lm.items.AbstractContentItem.call( this, layoutManager, config, parent );
 
@@ -4429,6 +4429,23 @@ lm.utils.copy( lm.items.Stack.prototype, {
 		}
 
 		this.header._$setClosable( isClosable );
+		this._$validateFixedSize()
+	},
+
+	/**
+	 * Validates if the stack has fixedSize or not. If a stack contains
+	 * a fixedSize component then the stack is not affected
+	 * by automatic resizing events.
+	 *
+	 * @returns {void}
+	 */
+	_$validateFixedSize: function() {
+		var len,i;
+
+		for ( i = 0, len = this.contentItems.length; i < len; i++ ) {
+			if (this.config.fixedSize = this.contentItems[i].config.fixedSize) break; 
+		}
+
 	},
 
 	_$destroy: function() {
@@ -4838,8 +4855,8 @@ lm.utils.ConfigMinifier = function() {
 		'openPopouts',
 		'parentId',
 		'activeItemIndex',
-		'reorderEnabled'
-
+		'reorderEnabled',
+		'fixedSize'
 
 
 
