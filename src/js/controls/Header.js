@@ -108,8 +108,9 @@ lm.utils.copy( lm.controls.Header.prototype, {
 	 * @param {lm.item.AbstractContentItem} contentItem
 	 */
 	setActiveContentItem: function( contentItem ) {
+		if (this.activeContentItem === contentItem) return;
 		var i, j, isActive, activeTab;
-
+		
 		for( i = 0; i < this.tabs.length; i++ ) {
 			isActive = this.tabs[ i ].contentItem === contentItem;
 			this.tabs[ i ].setActive( isActive );

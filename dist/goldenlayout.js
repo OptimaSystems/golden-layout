@@ -1565,7 +1565,7 @@ lm.container.ItemContainer = function( config, parent, layoutManager ) {
 	this.parent = parent;
 	this.layoutManager = layoutManager;
 	this.isHidden = false;
-	
+
 	this._config = config;
 	this._element = $( [
 		'<div class="lm_item_container">',
@@ -1587,7 +1587,7 @@ lm.utils.copy( lm.container.ItemContainer.prototype, {
 	getElement: function() {
 		return this._contentElement;
 	},
-	
+
 	/**
 	 * Hide the container. Notifies the containers content first
 	 * and then hides the DOM node. If the container is already hidden
@@ -1600,7 +1600,7 @@ lm.utils.copy( lm.container.ItemContainer.prototype, {
 		this.isHidden = true;
 		this._element.hide();
 	},
-	
+
 	/**
 	 * Shows a previously hidden container. Notifies the
 	 * containers content first and then shows the DOM element.
@@ -1628,7 +1628,7 @@ lm.utils.copy( lm.container.ItemContainer.prototype, {
 	 * @todo  Rework!!!
 	 * @param {Number} width  The new width in pixel
 	 * @param {Number} height The new height in pixel
-	 * 
+	 *
 	 * @returns {Boolean} resizeSuccesful
 	 */
 	setSize: function( width, height ) {
@@ -1644,7 +1644,7 @@ lm.utils.copy( lm.container.ItemContainer.prototype, {
 		while( !rowOrColumn.isColumn && !rowOrColumn.isRow ) {
 			rowOrColumnChild = rowOrColumn;
 			rowOrColumn = rowOrColumn.parent;
-			
+
 
 			/**
 			 * No row or column has been found
@@ -1671,7 +1671,7 @@ lm.utils.copy( lm.container.ItemContainer.prototype, {
 
 		return true;
 	},
-	
+
 	/**
 	 * Closes the container if it is closable. Can be called by
 	 * both the component within at as well as the contentItem containing
@@ -1732,7 +1732,7 @@ lm.utils.copy( lm.container.ItemContainer.prototype, {
 	 *
 	 * @param {[Int]} width  in px
 	 * @param {[Int]} height in px
-	 * 
+	 *
 	 * @returns {void}
 	 */
 	_$setSize: function( width, height ) {
@@ -2412,8 +2412,9 @@ lm.utils.copy( lm.controls.Header.prototype, {
 	 * @param {lm.item.AbstractContentItem} contentItem
 	 */
 	setActiveContentItem: function( contentItem ) {
+		if (this.activeContentItem === contentItem) return;
 		var i, j, isActive, activeTab;
-
+		
 		for( i = 0; i < this.tabs.length; i++ ) {
 			isActive = this.tabs[ i ].contentItem === contentItem;
 			this.tabs[ i ].setActive( isActive );
@@ -2861,13 +2862,10 @@ lm.utils.copy( lm.controls.Tab.prototype, {
 	_onTabClick: function( event ) {
 		// left mouse button or tap
 		if( event.button === 0 || event.type === 'touchstart' ) {
-			var activeContentItem = this.header.parent.getActiveContentItem();
-			if( this.contentItem !== activeContentItem ) {
-				this.header.parent.setActiveContentItem( this.contentItem );
-			}
-
-			// middle mouse button
-		} else if( event.button === 1 && this.contentItem.config.isClosable ) {
+			this.header.parent.setActiveContentItem( this.contentItem );
+		}	
+		// middle mouse button
+		else if( event.button === 1 && this.contentItem.config.isClosable ) {
 			this._onCloseClick( event );
 		}
 	},
@@ -4360,6 +4358,7 @@ lm.utils.copy( lm.items.Stack.prototype, {
 	},
 
 	setActiveContentItem: function( contentItem ) {
+		if (this._activeContentItem === contentItem) return;
 		if( lm.utils.indexOf( contentItem, this.contentItems ) === -1 ) {
 			throw new Error( 'contentItem is not a child of this stack' );
 		}
