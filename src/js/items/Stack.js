@@ -91,6 +91,7 @@ lm.utils.copy( lm.items.Stack.prototype, {
 		this.header.setActiveContentItem( contentItem );
 		contentItem._$show();
 		this.emit( 'activeContentItemChanged', contentItem );
+		this.layoutManager.emit( 'activeContentItemChanged', contentItem );
 		this.emitBubblingEvent( 'stateChanged' );
 	},
 
@@ -113,11 +114,12 @@ lm.utils.copy( lm.items.Stack.prototype, {
 		var index = lm.utils.indexOf( contentItem, this.contentItems );
 		lm.items.AbstractContentItem.prototype.removeChild.call( this, contentItem, keepChild );
 		this.header.removeTab( contentItem );
-
-		if( this.contentItems.length > 0 ) {
-			this.setActiveContentItem( this.contentItems[ Math.max( index - 1, 0 ) ] );
-		} else {
-			this._activeContentItem = null;
+		if (this.header.activeContentItem === contentItem) {
+			if (this.contentItems.length > 0) {
+				this.setActiveContentItem(this.contentItems[Math.max(index - 1, 0)]);
+			} else {
+				this._activeContentItem = null;
+			}
 		}
 
 		this._$validateClosability();

@@ -37,6 +37,10 @@ lm.utils.DragListener.timeout = null;
 lm.utils.copy( lm.utils.DragListener.prototype, {
 	destroy: function() {
 		this._eElement.unbind( 'mousedown touchstart', this._fDown );
+        this._oDocument.unbind( 'mouseup touchend', this._fUp );
+        this._eElement = null;
+        this._oDocument = null;
+        this._eBody = null;
 	},
 
 	onMouseDown: function( oEvent ) {
@@ -87,6 +91,7 @@ lm.utils.copy( lm.utils.DragListener.prototype, {
 			this._eElement.removeClass( 'lm_dragging' );
 			this._oDocument.find( 'iframe' ).css( 'pointer-events', '' );
 			this._oDocument.unbind( 'mousemove touchmove', this._fMove );
+			this._oDocument.unbind( 'mouseup touchend', this._fUp );
 
 			if( this._bDragging === true ) {
 				this._bDragging = false;
